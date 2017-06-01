@@ -15,6 +15,7 @@ public class PlayerController : MonoBehaviour {
 	public float speedMult = 10;
 	public float jumpMult = 6;
 	public float jumpMoveMult = 500;
+	public float allMoveMult = 1;
 
 	// Script
 	//
@@ -23,7 +24,7 @@ public class PlayerController : MonoBehaviour {
 	private Rigidbody rb;
 	private Transform tr;
 	private bool doJump = false;
-	private int jumping = false;
+	private int jumping = 0;
 	private float h,v = 0;
 
 	// Use this for initialization
@@ -34,6 +35,7 @@ public class PlayerController : MonoBehaviour {
 
 	private float t;
 	private int f;
+	private Vector3 zer = new Vector3(0, 0, 0);
 
 	// Update is called once per frame
 	void FixedUpdate () {
@@ -49,15 +51,36 @@ public class PlayerController : MonoBehaviour {
 		if (jumping == 0) {
 			// rolling
 			move = new Vector3(horizontalMove, 0f, verticalMove);
+			move *= speedMult;
 			if (jumpAllowed) {
 				if (Input.GetKey(KeyCode.Space)) {
-					move.y = 100 * jumpMult;
+					h = horizontalMove * jumpMoveMult;
+					v = verticalMove * jumpMoveMult;
+					if (continuousMove) {
+						move = new Vector3(h / continuousDiv, 100 * jumpMult, v / continuousDiv);
+					} else {
+						move = new Vector3(h, 100 * jumpMult, v);
+					}
 					jumping = 1;
 				}
 			}
-			move *= speedMult;
 		} else if (jumping == 1) {
 			// Manual jump, not touching ground
+			if (continuousMove) {
+				if (stopAllowed) {
+					if (Math.Abs(Input.GetAxis("Horizontal")) == 0) {
+						h = 0;
+					}
+					if (Math.Abs(Input.GetAxis("Vertical")) == 0) {
+						v = 0;
+					}
+				}
+				h /= divPerCycle;
+				v /= divPerCycle;
+				move = new Vector3(h / continuousDiv, 0f, v / continuousDiv);
+			} else {
+				move = zer;
+			}
 		} else if (jumping == 2) {
 			// jumping
 			if (doJump) {
@@ -88,13 +111,14 @@ public class PlayerController : MonoBehaviour {
 					v /= divPerCycle;
 					move = new Vector3(h / continuousDiv, 0f, v / continuousDiv);
 				} else {
-					move = new Vector3(0f, 0f, 0f);
+					move = zer;
 				}
 			}
 		} else {
 			Debug.LogWarning("Variable \"Jumping\" cannot be " + jumping.ToString());
+			move = zer;
 		}
-		rb.AddForce(move);
+		rb.AddForce(move * allMoveMult);
 		f++;
 	}
 
